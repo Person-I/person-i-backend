@@ -3,3 +3,4 @@ djangorestframework
 python-dotenv
 psycopg2-binary
 drf-spectacular
+fal-client
