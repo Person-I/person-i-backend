@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Note, Conversation, CVAnalysis
+from .models import Note, Conversation, CVAnalysis, CalendarSubscription, CalendarEvent
 
 class NoteSerializer(serializers.ModelSerializer):
     content = serializers.CharField(trim_whitespace=False)  # This will preserve exact string format
@@ -32,4 +32,22 @@ class CVAnalysisSerializer(serializers.ModelSerializer):
 class CVAnalysisDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = CVAnalysis
-        fields = ['id', 'user_id', 'summary', 'text', 'created_at'] 
+        fields = ['id', 'user_id', 'summary', 'text', 'created_at']
+
+class CalendarSubscriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CalendarSubscription
+        fields = ['id', 'user_id', 'webcal_url']
+
+class CalendarSyncResponseSerializer(serializers.Serializer):
+    status = serializers.CharField()
+    events_added = serializers.IntegerField()
+
+class CalendarEventDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CalendarEvent
+        fields = [
+            'id', 'event_id', 'summary', 'description', 'start_time', 
+            'end_time', 'location', 'organizer', 'attendees', 'notes',
+            'status', 'meeting_link', 'created_at'
+        ] 

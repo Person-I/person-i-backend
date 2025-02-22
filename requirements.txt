@@ -7,3 +7,5 @@ django-cors-headers
 openai
 PyPDF2
 pytesseract
+icalendar
+requests

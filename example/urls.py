@@ -1,6 +1,10 @@
 # example/urls.py
 from django.urls import path
-from .views import NotesView, NoteDetailView, ConversationsView, ConversationDetailView, PDFAnalysisView, CVAnalysisDetailView
+from .views import (
+    NotesView, NoteDetailView, ConversationsView, ConversationDetailView,
+    PDFAnalysisView, CVAnalysisDetailView, CalendarSyncView,
+    UserCalendarEventsView
+)
 
 urlpatterns = [
     path('notes/', NotesView.as_view(), name='notes'),
@@ -9,4 +13,6 @@ urlpatterns = [
     path('conversations/<int:pk>/', ConversationDetailView.as_view(), name='conversation-detail'),
     path('analyze-pdf/', PDFAnalysisView.as_view(), name='analyze-pdf'),
     path('cv-analysis/', CVAnalysisDetailView.as_view(), name='cv-analysis'),
+    path('calendar-sync/', CalendarSyncView.as_view(), name='calendar-sync'),
+    path('calendar-events/', UserCalendarEventsView.as_view(), name='user-calendar-events'),
 ]

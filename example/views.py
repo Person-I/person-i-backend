@@ -1,11 +1,11 @@
 # example/views.py
-from datetime import datetime
+from datetime import datetime, timedelta
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-from .models import Note, Conversation, CVAnalysis
-from .serializers import NoteSerializer, ConversationSerializer, CVAnalysisSerializer, CVAnalysisDetailSerializer
+from .models import Note, Conversation, CVAnalysis, CalendarEvent, CalendarSubscription
+from .serializers import NoteSerializer, ConversationSerializer, CVAnalysisSerializer, CVAnalysisDetailSerializer, CalendarSubscriptionSerializer, CalendarSyncResponseSerializer, CalendarEventDetailSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, OpenApiTypes
 
 from django.http import HttpResponse
@@ -18,6 +18,9 @@ from openai import OpenAI
 from rest_framework.parsers import MultiPartParser
 from django.conf import settings
 from dotenv import load_dotenv
+import requests
+from icalendar import Calendar
+from django.utils import timezone
 
 load_dotenv()
 
@@ -339,3 +342,166 @@ class CVAnalysisDetailView(APIView):
                 {'error': 'No CV analysis found for this user'}, 
                 status=status.HTTP_404_NOT_FOUND
             )
+
+class CalendarSyncView(APIView):
+    permission_classes = [AllowAny]
+
+    def sync_calendar_events(self, user_id, webcal_url):
+        https_url = webcal_url.replace('webcal://', 'https://')
+        response = requests.get(https_url)
+        cal = Calendar.from_ical(response.content)
+        
+        end_date = timezone.now()
+        start_date = end_date - timedelta(days=7)
+        
+        events_added = 0
+        
+        for component in cal.walk('VEVENT'):
+            event_start = component.get('dtstart').dt
+            
+            if event_start < start_date or event_start > end_date:
+                continue
+                
+            event_id = str(component.get('uid'))
+            
+            # Extract attendees information
+            attendees = []
+            for attendee in component.get('attendee', []):
+                attendee_params = dict(attendee.params)
+                attendee_data = {
+                    'email': str(attendee).replace('mailto:', ''),
+                    'name': attendee_params.get('CN', ''),
+                    'role': attendee_params.get('ROLE', ''),
+                    'status': attendee_params.get('PARTSTAT', '')
+                }
+                attendees.append(attendee_data)
+
+            # Extract location and meeting link
+            location = str(component.get('location', ''))
+            meeting_link = ''
+            
+            # Look for virtual meeting links in description or location
+            description = str(component.get('description', ''))
+            for line in description.split('\n'):
+                if any(link in line.lower() for link in ['meet.google.com', 'teams.microsoft.com', 'zoom.us']):
+                    meeting_link = line.strip()
+                    break
+
+            # Create or update event with extended information
+            event, created = CalendarEvent.objects.update_or_create(
+                user_id=user_id,
+                event_id=event_id,
+                defaults={
+                    'summary': str(component.get('summary', '')),
+                    'description': description,
+                    'start_time': component.get('dtstart').dt,
+                    'end_time': component.get('dtend').dt if component.get('dtend') else component.get('dtstart').dt,
+                    'location': location,
+                    'organizer': str(component.get('organizer', '')).replace('mailto:', ''),
+                    'attendees': attendees,
+                    'status': str(component.get('status', 'confirmed')).lower(),
+                    'meeting_link': meeting_link,
+                    'notes': str(component.get('x-alt-desc', ''))  # Some calendars use this for rich text notes
+                }
+            )
+            
+            if created:
+                events_added += 1
+        
+        return events_added
+
+    @extend_schema(
+        request=CalendarSubscriptionSerializer,
+        responses={201: CalendarSyncResponseSerializer},
+        description='Sync calendar events from webcal URL'
+    )
+    def post(self, request):
+        user_id = request.data.get('user_id')
+        webcal_url = request.data.get('webcal_url')
+
+        if not user_id or not webcal_url:
+            return Response(
+                {'error': 'Both user_id and webcal_url are required'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not webcal_url.startswith('webcal://'):
+            return Response(
+                {'error': 'URL must be a webcal:// URL'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # Save or update subscription
+            subscription, _ = CalendarSubscription.objects.update_or_create(
+                user_id=user_id,
+                defaults={'webcal_url': webcal_url}
+            )
+
+            # Sync events
+            events_added = self.sync_calendar_events(user_id, webcal_url)
+
+            return Response({
+                'status': 'success',
+                'events_added': events_added
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class UserCalendarEventsView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(name='user_id', description='ID of the user', required=True, type=str),
+            OpenApiParameter(
+                name='start_date',
+                description='Start date for filtering events (YYYY-MM-DD)',
+                required=False,
+                type=str
+            ),
+            OpenApiParameter(
+                name='end_date',
+                description='End date for filtering events (YYYY-MM-DD)',
+                required=False,
+                type=str
+            )
+        ],
+        responses={200: CalendarEventDetailSerializer(many=True)},
+        description='Get all calendar events for a specific user with optional date filtering'
+    )
+    def get(self, request):
+        user_id = request.query_params.get('user_id')
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+        if not user_id:
+            return Response(
+                {'error': 'user_id is required'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Start with base query
+        events = CalendarEvent.objects.filter(user_id=user_id)
+
+        # Apply date filters if provided
+        try:
+            if start_date:
+                events = events.filter(start_time__date__gte=start_date)
+            if end_date:
+                events = events.filter(end_time__date__lte=end_date)
+        except ValueError:
+            return Response(
+                {'error': 'Invalid date format. Use YYYY-MM-DD'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Order by start time
+        events = events.order_by('start_time')
+        
+        serializer = CalendarEventDetailSerializer(events, many=True)
+        return Response(serializer.data)
