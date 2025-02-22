@@ -27,4 +27,9 @@ class ConversationSerializer(serializers.ModelSerializer):
 class CVAnalysisSerializer(serializers.ModelSerializer):
     class Meta:
         model = CVAnalysis
-        fields = ['id', 'user_id'] 
+        fields = ['id', 'user_id']
+
+class CVAnalysisDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CVAnalysis
+        fields = ['id', 'user_id', 'summary', 'text', 'created_at'] 

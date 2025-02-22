@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from .models import Note, Conversation, CVAnalysis
-from .serializers import NoteSerializer, ConversationSerializer, CVAnalysisSerializer
+from .serializers import NoteSerializer, ConversationSerializer, CVAnalysisSerializer, CVAnalysisDetailSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, OpenApiTypes
 
 from django.http import HttpResponse
@@ -309,4 +309,33 @@ class PDFAnalysisView(APIView):
             return Response(
                 {'error': str(e)}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class CVAnalysisDetailView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(name='user_id', description='ID of the user', required=True, type=str)
+        ],
+        responses={200: CVAnalysisDetailSerializer},
+        description='Get CV analysis for a specific user'
+    )
+    def get(self, request):
+        user_id = request.query_params.get('user_id')
+        if not user_id:
+            return Response(
+                {'error': 'user_id is required'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Get the most recent analysis for this user
+            analysis = CVAnalysis.objects.filter(user_id=user_id).latest('created_at')
+            serializer = CVAnalysisDetailSerializer(analysis)
+            return Response(serializer.data)
+        except CVAnalysis.DoesNotExist:
+            return Response(
+                {'error': 'No CV analysis found for this user'}, 
+                status=status.HTTP_404_NOT_FOUND
             )
