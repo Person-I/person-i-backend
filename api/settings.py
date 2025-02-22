@@ -49,9 +49,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -172,18 +172,22 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 if DEBUG:
     ALLOWED_HOSTS += ['localhost']
 
-# CORS settings
+# Dodaj te ustawienia CORS
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # React default port
-    "http://127.0.0.1:3000",
-    "http://localhost:5173",  # Vite default port
-    "http://127.0.0.1:5173",
+    "https://mindful-mentor-owl.vercel.app",
+    "http://localhost:3000",  # dla developmentu
+    "http://localhost:8080",
 ]
 
-# Allow credentials (cookies, authorization headers)
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
 
-# If you need to allow specific headers
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
@@ -195,3 +199,6 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
+
+# Jeśli chcesz pozwolić na credentials (cookies, authorization headers)
+CORS_ALLOW_CREDENTIALS = True
