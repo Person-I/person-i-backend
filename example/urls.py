@@ -1,9 +1,7 @@
 # example/urls.py
 from django.urls import path
-
-from example.views import index
-
+from .views import HelloWorldView
 
 urlpatterns = [
-    path('', index),
+    path('hello/', HelloWorldView.as_view(), name='hello-world'),
 ]

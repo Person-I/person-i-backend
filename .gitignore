@@ -54,9 +54,5 @@ env/
 venv/ 
 ENV/ 
 env.bak/ 
-venv.bak/
-
-# Static files
-/staticfiles/
-/static/admin/
-/static/rest_framework/ 
+venv.bak/ 
+staticfiles/
