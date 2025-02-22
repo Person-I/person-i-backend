@@ -6,6 +6,8 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from .models import Note, Conversation
 from .serializers import NoteSerializer, ConversationSerializer
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from drf_spectacular.types import OpenApiTypes
 
 from django.http import HttpResponse
 
@@ -24,6 +26,13 @@ def index(request):
 class NotesView(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(name='user_id', description='ID of the user', required=True, type=str)
+        ],
+        responses={200: NoteSerializer(many=True)},
+        description='Get all notes for a specific user'
+    )
     def get(self, request):
         user_id = request.query_params.get('user_id')
         if not user_id:
@@ -33,6 +42,11 @@ class NotesView(APIView):
         serializer = NoteSerializer(notes, many=True)
         return Response(serializer.data)
 
+    @extend_schema(
+        request=NoteSerializer,
+        responses={201: NoteSerializer},
+        description='Create a new note for a user'
+    )
     def post(self, request):
         user_id = request.data.get('user_id')
         if not user_id:
@@ -95,6 +109,13 @@ class NoteDetailView(APIView):
 class ConversationsView(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(name='user_id', description='ID of the user', required=True, type=str)
+        ],
+        responses={200: ConversationSerializer(many=True)},
+        description='Get all conversations for a specific user'
+    )
     def get(self, request):
         user_id = request.query_params.get('user_id')
         if not user_id:
@@ -104,6 +125,11 @@ class ConversationsView(APIView):
         serializer = ConversationSerializer(conversations, many=True)
         return Response(serializer.data)
 
+    @extend_schema(
+        request=ConversationSerializer,
+        responses={201: ConversationSerializer},
+        description='Create a new conversation for a user'
+    )
     def post(self, request):
         user_id = request.data.get('user_id')
         if not user_id:
