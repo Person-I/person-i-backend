@@ -168,6 +168,8 @@ CORS_ALLOWED_ORIGINS = [
     "https://mindful-mentor-owl.vercel.app",
     "http://localhost:3000",  # dla developmentu
     "http://localhost:8080",
+    "https://elevenlabs.io",
+    "https://lovable.dev",
 ]
 
 CORS_ALLOW_METHODS = [
