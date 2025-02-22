@@ -11,7 +11,7 @@ class Note(models.Model):
 
 class Conversation(models.Model):
     user_id = models.CharField(max_length=100)
-    content = models.JSONField()  # Store conversation as JSON with messages array
+    content = models.TextField()  # Changed from JSONField to TextField
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
