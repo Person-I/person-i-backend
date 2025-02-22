@@ -16,4 +16,13 @@ class Conversation(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        ordering = ['-created_at']
+
+class CVAnalysis(models.Model):
+    user_id = models.CharField(max_length=100)
+    summary = models.TextField()
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
         ordering = ['-created_at'] 

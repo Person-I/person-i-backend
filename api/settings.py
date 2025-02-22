@@ -160,17 +160,8 @@ SPECTACULAR_SETTINGS = {
     'TAGS': [
         {'name': 'Notes', 'description': 'Operations with user notes'},
         {'name': 'Conversations', 'description': 'Operations with user conversations'},
-        {'name': 'Document Analysis', 'description': 'OCR and document analysis operations'},
     ],
 }
-
-# Media files configuration
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-# Add this to make media files accessible in development
-if DEBUG:
-    ALLOWED_HOSTS += ['localhost']
 
 # Dodaj te ustawienia CORS
 CORS_ALLOWED_ORIGINS = [

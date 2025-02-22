@@ -4,19 +4,22 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-from .models import Note, Conversation
-from .serializers import NoteSerializer, ConversationSerializer
+from .models import Note, Conversation, CVAnalysis
+from .serializers import NoteSerializer, ConversationSerializer, CVAnalysisSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, OpenApiTypes
-from rest_framework.parsers import MultiPartParser, FormParser
-from .services.fal_service import FalService
-import base64
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
-import os
-from django.conf import settings
-from urllib.parse import urljoin
 
 from django.http import HttpResponse
+import os
+from PIL import Image
+import io
+import PyPDF2
+import pytesseract
+from openai import OpenAI
+from rest_framework.parsers import MultiPartParser
+from django.conf import settings
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def index(request):
     now = datetime.now()
@@ -196,70 +199,114 @@ class ConversationDetailView(APIView):
         conversation.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-class DocumentAnalysisView(APIView):
-    parser_classes = (MultiPartParser, FormParser)
+class PDFAnalysisView(APIView):
     permission_classes = [AllowAny]
+    parser_classes = [MultiPartParser]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+
+    def extract_text_from_pdf(self, pdf_file):
+        # Read PDF file
+        pdf_reader = PyPDF2.PdfReader(pdf_file)
+        text = ""
+        
+        # Extract text from each page
+        for page in pdf_reader.pages:
+            text += page.extract_text() + "\n"
+        
+        return text
+
+    def analyze_text_with_openai(self, text):
+        response = self.client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant that analyzes resumes and CVs. When analyzing, provide a clean summary without any special characters or formatting artifacts. Focus on professional experience, skills, education, dates of employment and study, and achievements. Use clear, professional language."},
+                {"role": "user", "content": f"Please analyze this CV and provide a clear summary and key points. Remove any special characters or formatting artifacts from the text:\n\n{text}"}
+            ],
+            max_tokens=500
+        )
+        # Remove newlines from the summary and replace multiple spaces with single space
+        summary = response.choices[0].message.content.replace('\n', ' ').replace('  ', ' ')
+        return summary
 
     @extend_schema(
-        tags=['Document Analysis'],
-        operation_id='analyze_document',
         request={
             'multipart/form-data': {
                 'type': 'object',
                 'properties': {
-                    'file': {
-                        'type': 'string',
-                        'format': 'binary'
-                    }
+                    'file': {'type': 'string', 'format': 'binary'},
+                    'user_id': {'type': 'string'}
                 },
-                'required': ['file']
+                'required': ['file', 'user_id']
             }
         },
-        responses={
-            200: {
-                'type': 'object',
-                'properties': {
-                    'raw_text': {'type': 'string', 'description': 'Extracted text from the image'},
-                    'summary_prompt': {'type': 'string', 'description': 'Generated prompt for summarizing user information'}
+        responses={201: CVAnalysisSerializer},
+        description='Analyze a PDF file and use OpenAI to provide analysis',
+        examples=[
+            OpenApiExample(
+                'Successful Response',
+                value={
+                    'id': 1,
+                    'user_id': 'string'
                 }
-            },
-            400: {
-                'type': 'object',
-                'properties': {
-                    'error': {'type': 'string'}
-                }
-            }
-        },
-        description='Upload an image for OCR analysis and user information extraction. Supports common image formats (JPG, PNG, etc.)'
+            )
+        ]
     )
     def post(self, request):
-        try:
-            if 'file' not in request.FILES:
-                return Response({'error': 'No file provided'}, status=status.HTTP_400_BAD_REQUEST)
+        if 'file' not in request.FILES:
+            return Response(
+                {'error': 'No file provided'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-            file = request.FILES['file']
+        if 'user_id' not in request.data:
+            return Response(
+                {'error': 'user_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user_id = request.data['user_id']
+        pdf_file = request.FILES['file']
+        
+        if not pdf_file.name.endswith('.pdf'):
+            return Response(
+                {'error': 'File must be a PDF'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            extracted_text = self.extract_text_from_pdf(pdf_file)
             
-            # Create media directory if it doesn't exist
-            os.makedirs(os.path.join(settings.MEDIA_ROOT, 'tmp'), exist_ok=True)
+            if not extracted_text.strip():
+                return Response(
+                    {'error': 'Could not extract text from PDF'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             
-            # Save file temporarily
-            path = default_storage.save(f'tmp/{file.name}', ContentFile(file.read()))
-            
-            # Generate full URL including domain
-            domain = request.build_absolute_uri('/').rstrip('/')
-            file_url = f"{domain}{settings.MEDIA_URL}{path}"
-            
-            # Initialize FAL service and process image
-            fal_service = FalService()
-            result = fal_service.extract_text_from_image(file_url)
-            
-            # Clean up temporary file
-            default_storage.delete(path)
-            
-            if 'error' in result:
-                return Response({'error': result['error']}, status=status.HTTP_400_BAD_REQUEST)
-                
-            return Response(result, status=status.HTTP_200_OK)
-            
+            analysis = self.analyze_text_with_openai(extracted_text)
+
+            # Save to database
+            cv_analysis = CVAnalysis.objects.create(
+                user_id=user_id,
+                summary=analysis,
+                text=extracted_text
+            )
+
+            # Return only id and user_id
+            return Response({
+                'id': cv_analysis.id,
+                'user_id': cv_analysis.user_id
+            }, status=status.HTTP_201_CREATED)
+
         except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            if hasattr(e, 'response'):
+                return Response(
+                    {'error': e.response.json()}, 
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

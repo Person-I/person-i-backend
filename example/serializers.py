@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Note, Conversation
+from .models import Note, Conversation, CVAnalysis
 
 class NoteSerializer(serializers.ModelSerializer):
     content = serializers.CharField(trim_whitespace=False)  # This will preserve exact string format
@@ -22,4 +22,9 @@ class ConversationSerializer(serializers.ModelSerializer):
         if isinstance(data.get('content'), str):
             data = data.copy()
             data['content'] = data['content'].strip('"')
-        return super().to_internal_value(data) 
+        return super().to_internal_value(data)
+
+class CVAnalysisSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CVAnalysis
+        fields = ['id', 'user_id'] 
