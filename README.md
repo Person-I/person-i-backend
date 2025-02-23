@@ -1,106 +1,92 @@
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fexamples%2Ftree%2Fmain%2Fpython%2Fdjango&demo-title=Django%20%2B%20Vercel&demo-description=Use%20Django%204%20on%20Vercel%20with%20Serverless%20Functions%20using%20the%20Python%20Runtime.&demo-url=https%3A%2F%2Fdjango-template.vercel.app%2F&demo-image=https://assets.vercel.com/image/upload/v1669994241/random/django.png)
+# 🚀 Person I – Your AI Mentor for Growth & Habits
 
-# Django + Vercel
+## 🛑 The Problem
+People often fail to analyze their actions, don’t learn from mistakes, and lose motivation. They lack a structured, intelligent system that helps them make better decisions and build long-term habits based on real insights.
 
-This example shows how to use Django 4 on Vercel with Serverless Functions using the [Python Runtime](https://vercel.com/docs/concepts/functions/serverless-functions/runtimes/python).
+How many times in the past month have you lost motivation just because something didn’t go as planned? What if you could share your challenges with Steve Jobs or Henry Ford and get constructive advice + a clear action plan in return?
 
-## Demo
+With **Person I**, that’s no longer a fantasy—it’s a reality.
 
-https://django-template.vercel.app/
+---
 
-## How it Works
+## ✨ What is Person I?
+**Person I** is an **AI-powered mentor** that helps users reflect, improve, and stay motivated. Using advanced **Conversational AI** and **AI Journaling techniques**, it provides personalized feedback, tracks progress, and offers actionable insights.
 
-Our Django application, `example` is configured as an installed application in `api/settings.py`:
+### 🌍 [Try the application here!](https://mindful-mentor-owl.vercel.app/)
 
-```python
-# api/settings.py
-INSTALLED_APPS = [
-    # ...
-    'example',
-]
-```
+This isn’t just another chatbot—it’s a **digital coach** designed to help you make better decisions and grow both personally and professionally.
 
-We allow "\*.vercel.app" subdomains in `ALLOWED_HOSTS`, in addition to 127.0.0.1:
+---
 
-```python
-# api/settings.py
-ALLOWED_HOSTS = ['127.0.0.1', '.vercel.app']
-```
+## 🔥 Key Features
+### 🤖 **AI Mentor Conversations**  
+- Daily & weekly check-ins to help you reflect, learn, and plan your next moves.
+- Hyper-personalized insights based on your actions and history.
 
-The `wsgi` module must use a public variable named `app` to expose the WSGI application:
+### 📅 **Calendar Integration**  
+- AI adapts its recommendations based on your real schedule.
+- Syncs with your calendar to align growth with your daily routine.
 
-```python
-# api/wsgi.py
-app = get_wsgi_application()
-```
+### 📄 **Upload Your CV for Tailored Career Guidance**
+- Users can **upload their CV**, allowing AI to analyze career history and provide targeted coaching.
+- Helps in skill-gap identification and personalized career growth strategies.
+- Grab mine CV if you're hiring! 🤣 [link](/jacek-ciuba-cv.pdf)
 
-The corresponding `WSGI_APPLICATION` setting is configured to use the `app` variable from the `api.wsgi` module:
+### 🧠 **Context Awareness**  
+- Pulls insights from journals & past chats for personalized coaching.
+- Delivers **actionable advice** instead of generic responses.
 
-```python
-# api/settings.py
-WSGI_APPLICATION = 'api.wsgi.app'
-```
+### 💬 **Conversational AI**  
+- Powered by **ElevenLabs**, making AI discussions **natural & engaging**.
+- Talk to AI versions of **your role models** (e.g., Steve Jobs, Coco Chanel, Henry Ford) for strategic guidance!
 
-There is a single view which renders the current time in `example/views.py`:
+### 🔗 [Explore the API here!](https://person-i-backend-git-main-cjacas-projects.vercel.app/api/docs/)
 
-```python
-# example/views.py
-from datetime import datetime
+---
 
-from django.http import HttpResponse
+## 💰 Monetization Strategy
+### **B2C – Freemium Model**
+- Free plan + Premium subscriptions ($10–$50/month) for individuals.
 
+### **B2B – HR & Managerial Solutions**
+- AI Mentor for **performance reviews & employee development** ($99–$5000/month).
 
-def index(request):
-    now = datetime.now()
-    html = f'''
-    <html>
-        <body>
-            <h1>Hello from Vercel!</h1>
-            <p>The current time is { now }.</p>
-        </body>
-    </html>
-    '''
-    return HttpResponse(html)
-```
+### **AI Feature Upsell**
+- Advanced AI analytics, voice memos, external API integrations.
 
-This view is exposed a URL through `example/urls.py`:
+---
 
-```python
-# example/urls.py
-from django.urls import path
+## 🛠️ Tech Stack
+- **Backend**: FastAPI, Python
+- **Frontend**: React, Next.js
+- **AI**: OpenAI, ElevenLabs
+- **Database**: PostgreSQL
+- **Hosting**: Vercel
+- **Frontend project**: Lovable
 
-from example.views import index
+---
 
+## 🚀 Get Started
+### 1️⃣ **Try the App**
+[Click here to use Person I](https://mindful-mentor-owl.vercel.app/)
 
-urlpatterns = [
-    path('', index),
-]
-```
+### 2️⃣ **Explore the API**
+[View API Documentation](https://person-i-backend-git-main-cjacas-projects.vercel.app/api/docs/)
 
-Finally, it's made accessible to the Django server inside `api/urls.py`:
+### Frontend repository
+[View Frontend Repository](https://github.com/Person-I/mindful-mentor-owl)
 
-```python
-# api/urls.py
-from django.urls import path, include
+### Backend repository
+[View Backend Repository](https://github.com/Person-I/person-i-backend)
 
-urlpatterns = [
-    ...
-    path('', include('example.urls')),
-]
-```
+---
 
-This example uses the Web Server Gateway Interface (WSGI) with Django to enable handling requests on Vercel with Serverless Functions.
+## 🤝 Contributing
+We welcome contributions! Feel free to fork the repo, create a branch, and submit a PR with improvements.
 
-## Running Locally
+---
 
-```bash
-python manage.py runserver
-```
+## 📩 Contact
+For questions, reach out at: **ciubajacek+personi@gmail.com**
 
-Your Django application is now available at `http://localhost:8000`.
-
-## One-Click Deploy
-
-Deploy the example using [Vercel](https://vercel.com?utm_source=github&utm_medium=readme&utm_campaign=vercel-examples):
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fexamples%2Ftree%2Fmain%2Fpython%2Fdjango&demo-title=Django%20%2B%20Vercel&demo-description=Use%20Django%204%20on%20Vercel%20with%20Serverless%20Functions%20using%20the%20Python%20Runtime.&demo-url=https%3A%2F%2Fdjango-template.vercel.app%2F&demo-image=https://assets.vercel.com/image/upload/v1669994241/random/django.png)
+Made with ❤️ by **Karol Wiater** && **Jacek Ciuba**
