@@ -80,30 +80,31 @@ class NotesView(APIView):
 class NoteDetailView(APIView):
     permission_classes = [AllowAny]
 
-    def get_object(self, pk, user_id):
+    def get_object(self, pk):
         try:
-            return Note.objects.get(pk=pk, user_id=user_id)
+            return Note.objects.get(pk=pk)
         except Note.DoesNotExist:
             return None
 
+    @extend_schema(
+        responses={200: NoteSerializer},
+        description='Get a specific note by ID'
+    )
     def get(self, request, pk):
-        user_id = request.query_params.get('user_id')
-        if not user_id:
-            return Response({'error': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
-
-        note = self.get_object(pk, user_id)
+        note = self.get_object(pk)
         if not note:
             return Response({'error': 'Note not found'}, status=status.HTTP_404_NOT_FOUND)
         
         serializer = NoteSerializer(note)
         return Response(serializer.data)
 
+    @extend_schema(
+        request=NoteSerializer,
+        responses={200: NoteSerializer},
+        description='Update a specific note'
+    )
     def put(self, request, pk):
-        user_id = request.data.get('user_id')
-        if not user_id:
-            return Response({'error': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
-
-        note = self.get_object(pk, user_id)
+        note = self.get_object(pk)
         if not note:
             return Response({'error': 'Note not found'}, status=status.HTTP_404_NOT_FOUND)
         
@@ -113,12 +114,12 @@ class NoteDetailView(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @extend_schema(
+        responses={204: None},
+        description='Delete a specific note'
+    )
     def delete(self, request, pk):
-        user_id = request.query_params.get('user_id')
-        if not user_id:
-            return Response({'error': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
-
-        note = self.get_object(pk, user_id)
+        note = self.get_object(pk)
         if not note:
             return Response({'error': 'Note not found'}, status=status.HTTP_404_NOT_FOUND)
         
