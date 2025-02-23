@@ -21,6 +21,7 @@ from dotenv import load_dotenv
 import requests
 from icalendar import Calendar
 from django.utils import timezone
+from django.db import models
 
 load_dotenv()
 
@@ -44,14 +45,19 @@ class NotesView(APIView):
             OpenApiParameter(name='user_id', description='ID of the user', required=True, type=str)
         ],
         responses={200: NoteSerializer(many=True)},
-        description='Get all notes for a specific user'
+        description='Get all notes for a specific user and default system notes (IDs: 14-18)'
     )
     def get(self, request):
         user_id = request.query_params.get('user_id')
         if not user_id:
             return Response({'error': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
         
-        notes = Note.objects.filter(user_id=user_id)
+        # Get both user's notes and system notes (IDs: 14-18)
+        notes = Note.objects.filter(
+            models.Q(user_id=user_id) | 
+            models.Q(id__in=[14, 15, 16, 17, 18])
+        ).distinct().order_by('-created_at')
+        
         serializer = NoteSerializer(notes, many=True)
         return Response(serializer.data)
 
