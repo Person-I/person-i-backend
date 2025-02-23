@@ -1,5 +1,5 @@
 # 🚀 Person I – Your AI Mentor for Growth & Habits
-##Check video demo:
+## Check video demo:
 
 [![Person I Demo](/xnzQhF.gif)](https://www.youtube.com/watch?v=4L6R_YvmzV4)
 
