@@ -1,5 +1,7 @@
 # 🚀 Person I – Your AI Mentor for Growth & Habits
 
+[![Person I Demo](/xnzQhF.gif)](https://www.youtube.com/watch?v=4L6R_YvmzV4)
+
 ## 🛑 The Problem
 People often fail to analyze their actions, don’t learn from mistakes, and lose motivation. They lack a structured, intelligent system that helps them make better decisions and build long-term habits based on real insights.
 
